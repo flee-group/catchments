@@ -4,6 +4,13 @@ library(sf)
 library(ggplot2)
 
 ## eventaully get this from the DB
+# library(fleeDB)
+# library(keyring)
+# pw = key_get("fleedb-login-matt")
+# un = "c7701209"
+# fdb = dbConnect(Postgres(), host = host, user = un,
+#	password = pw, dbname = dbname)
+# mara = fleedb_raster(fdb, "mara_dem")
 mara = raster("~/work/students/Lukas/dem_aea.tif")
 sites = readRDS("data/sites.rds")
 
