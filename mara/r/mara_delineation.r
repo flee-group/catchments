@@ -17,7 +17,7 @@ mara = raster("~/work/students/Lukas/dem_aea.tif")
 ## swap catchment area for 42 and 43; done for the eduts
 ## same for 31 and 32
 # sites = readRDS("data/sites.rds")
-sites = readRDS("data/sites_edits.shp")
+sites = readRDS("data/sites_edits.rds")
 
 # mara2 = projectRaster(mara, crs="+init=epsg:32736")
 
@@ -34,20 +34,31 @@ Tp = pixel_topology(mara_r)
 options(mc.cores = 5)
 mara_vect = vectorise_stream(mara_r$stream, Tp)
 
-st_write(mara_vect, "mara.shp")
-st_write(sites, "mara_sites.shp")
+st_write(mara_vect, "data/mara.shp")
 
 ggplot(mara_vect) + geom_sf(col='blue') + 
-	geom_sf(data = sites, size=0.7, col='red') + 
-	geom_sf(data = sites_sn, size=0.7, col='yellow')
+	geom_sf(data = sites, size=0.7, col='red')
 
-## only needed for sites
-options(mc.cores = 1)
+## prep coordinates for catchment area
+pts = as.data.frame(rasterToPoints(mara_r$stream))
+pts$ca = NA
+nr = nrow(pts)
+reaches = unique(pts$stream)
+for(r in reaches) {
+	i = which(pts$stream == r)
+	pts$ca[i] = catchment(mara_r, type="points", y = as.matrix(pts[i, 1:2]), area = TRUE, Tp = Tp)
+	dn = sum(!is.na(pts$ca))
+	cat(paste0(Sys.time(), "  ", dn, "/", nr, " (", round(100 * dn/nr, 0), "%)", "\r"))
+}
+
+
+
+## also get for sites
 ca = catchment(mara_r, type='points', y = st_coordinates(sites), area = TRUE, Tp = Tp)
 
-## a few points fall outside, need to fix these
-sites$ca_grass = sapply(ca, function(x) ifelse(length(x) == 0, NA, x)) / (1000^2)
 
 
-library(WatershedTools)
-mara_ws = Watershed(mara_r$stream, mara_r$drainage, mara, mara_r$accum)
+
+# library(WatershedTools)
+# mara_ws = Watershed(mara_r$stream, mara_r$drainage, mara, mara_r$accum)
+
